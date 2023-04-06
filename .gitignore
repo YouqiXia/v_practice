@@ -1,0 +1,6 @@
+csrc/
+logs/
+sim/
+*.key
+*.log
+*.fsdb
