@@ -12,7 +12,7 @@ RTL_PATH = ../srcs/
 FILE_LIST = flist.f
 TOP_MODULE = tb_top
 
-default: compile build
+default: compile, build, run, wave, clean
 
 build: 
 	-mkdir $(SIM_LOG) $(SIM_PATH)
@@ -41,9 +41,6 @@ compile: build
 		+lint=TFIPC-L -full64 -F ${FILE_LIST} \
 		-top $(TOP_MODULE) -timescale=1ns/1ps \
 		-v2k_generate -debug_access+all
-
-# default: simv
-.PHONY: run, wave, clean
 
 run: compile
 	time $(SIM_PATH)/simv +dumpon=$(dump_on) +SIM_LOG=$(SIM_LOG) 2>&1 | tee $(SIM_LOG)/sim.log
