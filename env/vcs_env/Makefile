@@ -1,29 +1,33 @@
-sim_log = "./logs"
-dump_on = 1
-RV_ROOT = $(shell pwd)/..
-INCLUDE = $(shell pwd)/include
+# parameter for dump fsdb
+NOVAS_HOME = /opt/cad/synopsys/installs/verdi/Q-2020.03-SP2
 
-VCS_MACRO = 
-VCS_PARAM =
-CC_FILE =
-BLD = 
-VCS_MODEL_OPTS = 
-CC_INC = $(shell pwd)/include
+SIM_PATH = ./sim
+SIM_LOG = ./logs
+dump_on = 1
+
+CC_INC = 
 CC_FLAGS = 
-LDS_FILE = 
-FILE_LIST = $(RV_ROOT)/flistcore.f
+CINC_PATH =
+FILE_LIST = flist.f
 TOP_MODULE = tb_top
 
-default:
-	-rm ./simv.daidir/.vcs.timestamp
-	vcs +vcs+lic+wait -sverilog -kdb $(VCS_MACRO) $(VCS_PARAM) \
-		+vc+list +vpi $(CC_FILE) \
-		-CFLAGS "$(CC_INC) $(CC_FLAGS)" \
-		+lint=TFIPC-L -full64 -F ${FILE_LIST} \
+default: compile build
+
+build: 
+	-mkdir $(SIM_LOG) $(SIM_PATH)
+
+compile: build
+	vcs -full64 +vcs+lic+wait +vc+list \
+		-f ${FILE_LIST} \
+		-sverilog -v2k_generate \
+		-kdb +vpi \
+		-dpi -CFLAGS "$(CC_FLAGS)" -incdir+$(CINC_PATH) \
+		-P ${NOVAS_HOME}/share/PLI/VCS/LINUX64/novas.tab ${NOVAS_HOME}/share/PLI/VCS/LINUX64/pli.a \
+		+lint=TFIPC-L +lint=PCWM-L -debug_access+all +error+10 \
 		-top $(TOP_MODULE) -timescale=1ns/1ps \
-		-v2k_generate \ 
-		-debug_access+all \
-		+error+10 +lint=PCWM-L
+		-o $(SIM_PATH)/simv
+
+# optional: +loopdetect+number
 
 #	vcs +vcs+lic+wait -sverilog -kdb $(VCS_MACRO) $(VCS_PARAM) \
 		+vc+list +vpi $(CC_FILE) ${BLD}/rrvtb.so ${VCS_MODEL_OPTS} \
@@ -37,14 +41,14 @@ default:
 # default: simv
 .PHONY: run, wave, clean
 
-run: simv
-	-mkdir $(sim_log)
-	time ./simv +dumpon=$(dump_on) +sim_log=$(sim_log)  2>&1 | tee run_2_$(debug_print_on).log
+run: compile
+	time $(SIM_PATH)/simv +dumpon=$(dump_on) +SIM_LOG=$(SIM_LOG) 2>&1 | tee $(SIM_LOG)/sim.log
 
 wave: run
-	Verdi-SX -ssf ./logs/waves.fsdb
+	Verdi-SX -f $(FILE_LIST) -ssf $(SIM_PATH)/waves.fsdb 
 
 clean:
+	-rm $(SIM_LOG) $(SIM_PATH) -r
 	-rm bld.log simv ucli.key waves.*
 	-rm -r csrc simv.daidir logs Verdi-SXLog
 	-rm *.log
