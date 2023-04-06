@@ -8,6 +8,7 @@ dump_on = 1
 CC_INC = 
 CC_FLAGS = 
 CINC_PATH =
+RTL_PATH = ../srcs/
 FILE_LIST = flist.f
 TOP_MODULE = tb_top
 
@@ -15,6 +16,9 @@ default: compile build
 
 build: 
 	-mkdir $(SIM_LOG) $(SIM_PATH)
+	-ln -s $(RTL_PATH) .
+	-find -L . -type f -name '*.vh' > flist.f
+	-find -L . -type f -regex '.*\.\(v\|sv\)' >> flist.f
 
 compile: build
 	vcs -full64 +vcs+lic+wait +vc+list \
@@ -48,6 +52,7 @@ wave: run
 	Verdi-SX -f $(FILE_LIST) -ssf $(SIM_PATH)/waves.fsdb 
 
 clean:
+	-rm flist.f
 	-rm $(SIM_LOG) $(SIM_PATH) -r
 	-rm bld.log simv ucli.key waves.*
 	-rm -r csrc simv.daidir logs Verdi-SXLog
