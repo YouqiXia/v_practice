@@ -8,7 +8,7 @@ top_module = demo_tb
 VLOGAN_OPTS = -work xil_defaultlib -full64 +v2k -l $(SIM_PATH)/com.log +define+SIMULATION_EN -sverilog
 VHDLAN_OPTS = -work xil_defaultlib -full64 
 
-.PHONY:build analysis elabroate simulate verdi
+.PHONY:build analysis elaborate simulate verdi
 all:analysis elaborate simulate verdi
 
 build:
