@@ -1,3 +1,7 @@
+import dut_package::*;
+import "DPI-C" function void c_function();
+import "DPI-C" function void c_trans(input tx_packet_t tx_packet);
+
 module tb_top;
 
 reg [CNT_WIDTH-1:0] cnt;
@@ -7,6 +11,12 @@ reg flag_cnt;
 reg end_cnt;
 
 tx_trans tx_trans_u();
+tx_packet_t tx_packet_1;
+
+initial begin
+    tx_packet_1.addr = 32;
+    tx_packet_1.data = 83;
+end
 
 initial begin
     tx_trans_u.init_tx;
@@ -18,8 +28,10 @@ initial begin
     rst = 0;
     flag_cnt = 1;
     @(posedge end_cnt);
+    c_function();
     tx_trans_u.tx_action;
     @(posedge end_cnt);
+    c_trans(tx_packet_1);
     tx_trans_u.tx_action;
     $finish;
 end

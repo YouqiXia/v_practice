@@ -5,10 +5,11 @@ SIM_PATH = ./sim
 SIM_LOG = ./logs
 dump_on = 1
 
-CC_INC = 
+CINC_PATH = ./cfile
 CC_FLAGS = 
-CINC_PATH =
-RTL_PATH = ../srcs/
+LDFLGAS = 
+RTL_PATH = ../srcs
+DUT_PATH = ./dut
 FILE_LIST = flist.f
 TOP_MODULE = tb_top
 
@@ -16,16 +17,18 @@ default: compile, build, run, wave, clean
 
 build: 
 	-mkdir $(SIM_LOG) $(SIM_PATH)
-	-ln -s $(RTL_PATH) .
-	-find -L . -type f -name '*.vh' > flist.f
-	-find -L . -type f -regex '.*\.\(v\|sv\)' >> flist.f
+	-find -L $(RTL_PATH)/include/ -type f -regex '.*\.\(v\|sv\|vh\)' > flist.f
+	-find -L $(DUT_PATH)/include/ -type f -regex '.*\.\(v\|sv\)' >> flist.f
+	-find -L $(RTL_PATH)/rtl/ -type f -regex '.*\.\(v\|sv\)' >> flist.f
+	-find -L $(DUT_PATH)/rtl/ -type f -regex '.*\.\(v\|sv\)' >> flist.f
+	-find -L $(CINC_PATH) -type f -name '*c' >> flist.f
 
-compile: build
+compile:
 	vcs -full64 +vcs+lic+wait +vc+list \
 		-f ${FILE_LIST} \
 		-sverilog -v2k_generate \
 		-kdb +vpi \
-		-dpi -CFLAGS "$(CC_FLAGS)" -incdir+$(CINC_PATH) \
+		-dpi -CFLAGS "$(CC_FLAGS)" -incdir+"$(CINC_PATH)" -LDFLGAS "$(LDFLGAS)" \
 		-P ${NOVAS_HOME}/share/PLI/VCS/LINUX64/novas.tab ${NOVAS_HOME}/share/PLI/VCS/LINUX64/pli.a \
 		+lint=TFIPC-L +lint=PCWM-L -debug_access+all +error+10 \
 		-top $(TOP_MODULE) -timescale=1ns/1ps \
