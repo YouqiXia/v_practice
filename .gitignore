@@ -1,6 +1,10 @@
+build/
 csrc/
 logs/
 sim/
+AN.DB/
+
 *.key
 *.log
 *.fsdb
+vc_hdrs.h

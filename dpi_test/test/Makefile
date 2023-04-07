@@ -8,20 +8,24 @@ dump_on = 1
 CINC_PATH = ./cfile
 CC_FLAGS = 
 LDFLGAS = 
-RTL_PATH = ../srcs
-DUT_PATH = ./dut
 FILE_LIST = flist.f
 TOP_MODULE = tb_top
 
-default: compile, build, run, wave, clean
+# for create flist
+RTL_PATH = ../srcs
+DUT_PATH = ./dut
 
-build: 
-	-mkdir $(SIM_LOG) $(SIM_PATH)
+default: compile, build, run, wave, clean, creaflist
+
+creaflist:
 	-find -L $(RTL_PATH)/include/ -type f -regex '.*\.\(v\|sv\|vh\)' > flist.f
 	-find -L $(DUT_PATH)/include/ -type f -regex '.*\.\(v\|sv\)' >> flist.f
 	-find -L $(RTL_PATH)/rtl/ -type f -regex '.*\.\(v\|sv\)' >> flist.f
 	-find -L $(DUT_PATH)/rtl/ -type f -regex '.*\.\(v\|sv\)' >> flist.f
 	-find -L $(CINC_PATH) -type f -name '*c' >> flist.f
+
+build: 
+	-mkdir $(SIM_LOG) $(SIM_PATH)
 
 compile: build
 	vcs -full64 +vcs+lic+wait +vc+list \
@@ -52,7 +56,6 @@ wave: run
 	Verdi-SX -f $(FILE_LIST) -ssf $(SIM_PATH)/waves.fsdb 
 
 clean:
-	-rm flist.f
 	-rm $(SIM_LOG) $(SIM_PATH) -r
 	-rm bld.log simv ucli.key waves.*
 	-rm -r csrc simv.daidir logs Verdi-SXLog
