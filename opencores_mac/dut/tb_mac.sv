@@ -48,11 +48,25 @@ wire         	mdio                	;
 logic        	mdc                		;
 logic           cpu_init_end            ;
 
+// dut
+logic [2048-1:0]    packet;
+logic [63:0]        packet_size;
+
 initial begin
     reset = 1;
     #1000
     reset = 0;
-    host_interface.init_reg;
+    host_interface_u.read_init_reg;
+    host_interface_u.init_reg;
+    repeat (100) @(posedge host_interface.clk_reg);
+    user_interface_u.rx_ctrl;
+    repeat (100) @(posedge host_interface.clk_reg);
+    packet      = 'h180c200000100000000000088080001000a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000;
+    packet_size = 'd84;
+    user_interface_u.tx_ctrl(packet, packet_size);
+    repeat (100) @(posedge host_interface.clk_reg);
+    user_interface_u.rx_ctrl;
+    repeat (100) @(posedge host_interface.clk_reg);
     $finish;
 end
 
@@ -168,6 +182,7 @@ initial begin
       $fsdbDumpvars("+struct");
       $fsdbDumpvars("+mda");
       $fsdbDumpvars("+all");
+      $fsdbDumpMDA();
       $fsdbDumpon;
     end
 end

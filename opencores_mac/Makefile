@@ -34,7 +34,7 @@ compile: build
 		-kdb +vpi \
 		-dpi -CFLAGS "$(CC_FLAGS)" -incdir+"$(CINC_PATH)" -LDFLGAS "$(LDFLGAS)" \
 		-P ${NOVAS_HOME}/share/PLI/VCS/LINUX64/novas.tab ${NOVAS_HOME}/share/PLI/VCS/LINUX64/pli.a \
-		+lint=TFIPC-L +lint=PCWM-L -debug_access+all +error+10 \
+		+lint=TFIPC-L +lint=PCWM-L -debug_access+all -debug_all +error+10 \
 		-top $(TOP_MODULE) -timescale=1ns/1ps \
 		-o $(SIM_PATH)/simv
 
@@ -53,7 +53,7 @@ run: compile
 	time $(SIM_PATH)/simv +dumpon=$(dump_on) +sim_log=$(SIM_LOG) 2>&1 | tee $(SIM_LOG)/sim.log
 
 wave:
-	Verdi-SX -f $(FILE_LIST) -ssf $(SIM_LOG)/waves.fsdb 
+	Verdi-SX +v2k -sverilog -f $(FILE_LIST) -ssf $(SIM_LOG)/waves.fsdb 
 
 clean:
 	-rm $(SIM_LOG) $(SIM_PATH) -r

@@ -31,6 +31,6 @@
 ./rtl/miim/timescale.v
 ./dut/tb_mac.sv
 ./dut/clk_gen.v
-./dut/user_interface.v
-./dut/host_interface.v
 ./dut/phy_interface.v
+./dut/host_interface.sv
+./dut/user_interface.sv

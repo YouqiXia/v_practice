@@ -98,7 +98,7 @@ task write_reg(
 
 endtask
 
-task init_reg;
+task read_init_reg;
 
     @(posedge clk_reg);
 
@@ -107,5 +107,23 @@ task init_reg;
     end
 
 endtask
+
+task init_reg;
+
+    @(posedge clk_reg);
+
+    // flow control -> whether send a pause frame
+    // enable
+    write_reg(addr_pause_frame_send_en, 1);
+    // pause time
+    write_reg(addr_pause_quanta_set, 10);
+    // quanta = 0
+    write_reg(addr_xoff_cpu, 0);
+    // quanta = quanta_data
+    write_reg(addr_xon_cpu, 1);
+    
+
+endtask
+
 
 endmodule

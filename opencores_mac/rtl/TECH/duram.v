@@ -30,8 +30,11 @@ input                       clock_b;
 output  [DATA_WIDTH -1:0]   q_b;
 
 
-reg [DATA_WIDTH-1:0] memory[ADDR_WIDTH-1:0];
- 
+reg [DATA_WIDTH-1:0] memory[ADDR_DEPTH-1:0];
+reg [DATA_WIDTH -1:0] rdata_a;
+reg [DATA_WIDTH -1:0] rdata_b;
+
+
 always @(posedge clock_a) begin
     if (wren_a) begin
         memory[address_a] <= data_a;
@@ -44,9 +47,16 @@ always @(posedge clock_b) begin
     end
 end
 
-assign q_a = memory[address_a];
-assign q_b = memory[address_b];
+always @(posedge clock_a) begin
+    rdata_a <= memory[address_a];
+end
 
+always @(posedge clock_b) begin
+    rdata_b <= memory[address_b];
+end
+
+assign q_a = rdata_a;
+assign q_b = rdata_b;
 
 // altsyncram U_altsyncram (
 // .wren_a         (wren_a),

@@ -16,6 +16,7 @@ initial begin
       $fsdbDumpvars("+struct");
       $fsdbDumpvars("+mda");
       $fsdbDumpvars("+all");
+      $fsdbDumpMDA();
       $fsdbDumpon;
     end
 end
