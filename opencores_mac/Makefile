@@ -5,10 +5,10 @@ SIM_PATH = ./sim
 SIM_LOG = ./logs
 dump_on = 1
 
-CINC_PATH = ./cfile
+CINC_PATH = 
 CC_FLAGS = 
 LDFLGAS = 
-FILE_LIST = flist.f
+FILE_LIST = ./flist.f
 TOP_MODULE = tb_top
 
 # for create flist
@@ -52,7 +52,7 @@ compile: build
 run: compile
 	time $(SIM_PATH)/simv +dumpon=$(dump_on) +sim_log=$(SIM_LOG) 2>&1 | tee $(SIM_LOG)/sim.log
 
-wave: run
+wave:
 	Verdi-SX -f $(FILE_LIST) -ssf $(SIM_LOG)/waves.fsdb 
 
 clean:

@@ -50,10 +50,10 @@ compile: build
 		-v2k_generate -debug_access+all
 
 run: compile
-	time $(SIM_PATH)/simv +dumpon=$(dump_on) +SIM_LOG=$(SIM_LOG) 2>&1 | tee $(SIM_LOG)/sim.log
+	time $(SIM_PATH)/simv +dumpon=$(dump_on) +sim_log=$(SIM_LOG) 2>&1 | tee $(SIM_LOG)/sim.log
 
 wave: run
-	Verdi-SX -f $(FILE_LIST) -ssf $(SIM_PATH)/waves.fsdb 
+	Verdi-SX -f $(FILE_LIST) -ssf $(SIM_LOG)/waves.fsdb 
 
 clean:
 	-rm $(SIM_LOG) $(SIM_PATH) -r

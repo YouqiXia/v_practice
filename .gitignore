@@ -3,8 +3,9 @@ csrc/
 logs/
 sim/
 AN.DB/
+Verdi-SXLog/
 
 *.key
 *.log
-*.fsdb
+novas*
 vc_hdrs.h

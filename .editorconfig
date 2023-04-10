@@ -1,0 +1,7 @@
+[*.v]
+indent_style = space
+indent_size = 4
+
+[*.sv]
+indent_style = space
+indent_size = 4
