@@ -11,6 +11,7 @@ module host_interface (
 reg [63:0] write_counter;
 reg [63:0] read_counter;
 
+// addr
 parameter addr_Tx_Hwmark                  =7'd00;
 parameter addr_Tx_Lwmark                  =7'd01;
 parameter addr_pause_frame_send_en        =7'd02;
@@ -47,7 +48,10 @@ parameter addr_CPU_rd_dout_h              =7'd32;
 parameter addr_Line_loop_en               =7'd33;
 parameter addr_Speed                      =7'd34;
 
-
+// ctrl signal
+parameter PAUSE_START   = 1;
+parameter OPEN          = 1;
+parameter CLOSE         = 0;
 
 initial begin
     ca      = 0;
@@ -98,6 +102,66 @@ task write_reg(
 
 endtask
 
+task flow_ctrl(
+    input flow_ctrl_en
+);
+    // flow control -> whether send a pause frame
+    @(posedge clk_reg);
+    if(flow_ctrl_en) begin
+        // enable
+        write_reg(addr_pause_frame_send_en, 1);
+        // pause time
+        write_reg(addr_pause_quanta_set, 10);
+        // quanta = 0
+        write_reg(addr_xoff_cpu, 0);
+        // quanta = quanta_data
+        write_reg(addr_xon_cpu, 1);
+    end else begin
+        // disable
+        write_reg(addr_pause_frame_send_en, 1);
+    end
+endtask
+
+task broadcast_ctrl(
+    input broadcast_ctrl_en
+);
+    if(broadcast_ctrl_en) begin
+        // Broadcast filter
+        write_reg(addr_broadcast_filter_en, 1);
+        write_reg(addr_broadcast_bucket_depth, 1);
+        write_reg(addr_broadcast_bucket_interval, 10);
+    end else begin
+        write_reg(addr_broadcast_filter_en, 0);
+    end
+endtask
+
+task rx_append_crc_ctrl(
+    input rx_append_crc_ctrl_en
+);
+    if (rx_append_crc_ctrl_en) begin
+        write_reg(addr_RX_APPEND_CRC, 1);
+    end else begin
+        write_reg(addr_RX_APPEND_CRC, 0);
+    end
+endtask
+
+task crc_chk_ctrl(
+    input crc_chk_ctrl_en
+);
+    if (crc_chk_ctrl_en) begin 
+        write_reg(addr_CRC_chk_en, 1);
+    end else begin
+        write_reg(addr_CRC_chk_en, 0);
+    end
+endtask
+
+task counters_read(
+    input [6:0] counters_addr
+);
+    write_reg(addr_CPU_rd_addr, counters_addr);
+    write_reg(addr_CPU_rd_apply, 1);
+endtask
+
 task read_init_reg;
 
     @(posedge clk_reg);
@@ -111,17 +175,10 @@ endtask
 task init_reg;
 
     @(posedge clk_reg);
-
-    // flow control -> whether send a pause frame
-    // enable
-    write_reg(addr_pause_frame_send_en, 1);
-    // pause time
-    write_reg(addr_pause_quanta_set, 10);
-    // quanta = 0
-    write_reg(addr_xoff_cpu, 0);
-    // quanta = quanta_data
-    write_reg(addr_xon_cpu, 1);
-    
+    flow_ctrl(CLOSE);
+    broadcast_ctrl(CLOSE);
+    rx_append_crc_ctrl(CLOSE);
+    crc_chk_ctrl(CLOSE);
 
 endtask
 

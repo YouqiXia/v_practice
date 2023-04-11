@@ -122,7 +122,7 @@ always @(posedge clk_user) begin
 end
 
 // tx FSM
-typedef enum [1:0] {
+typedef enum logic [1:0] {
     TX_IDLE,
     TX_WORK
 } tx_state_t;

@@ -58,11 +58,12 @@ initial begin
     reset = 0;
     host_interface_u.read_init_reg;
     host_interface_u.init_reg;
+    host_interface_u.flow_ctrl(1);
     repeat (100) @(posedge host_interface.clk_reg);
     user_interface_u.rx_ctrl;
     repeat (100) @(posedge host_interface.clk_reg);
-    packet      = 'h180c200000100000000000088080001000a00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000;
-    packet_size = 'd84;
+    packet      = 'h180c200000100000000000088080001000a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000;
+    packet_size = 'd80;
     user_interface_u.tx_ctrl(packet, packet_size);
     repeat (100) @(posedge host_interface.clk_reg);
     user_interface_u.rx_ctrl;
