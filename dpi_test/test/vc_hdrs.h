@@ -53,6 +53,8 @@ struct	_vcs_dpi_tx_packet_t	{
 
  extern void c_trans(const /* INPUT */tx_packet_t *tx_packet);
 
+ extern void cpp_long_vector(const /* INPUT */svBitVecVal *signal);
+
 #ifdef __cplusplus
 }
 #endif

@@ -1,8 +1,14 @@
+parameter PACKET_SIZE = 100 + 14;
+
 import dut_package::*;
 import "DPI-C" function void c_function();
 import "DPI-C" function void c_trans(input tx_packet_t tx_packet);
+import "DPI-C" function void cpp_long_vector(input bit[1023:0] signal);
+
 
 module tb_top;
+
+bit [PACKET_SIZE-1:0] packet = 1024'h010101010101010101010101010101010101010101;
 
 reg [CNT_WIDTH-1:0] cnt;
 reg clk = 0;
@@ -28,11 +34,15 @@ initial begin
     rst = 0;
     flag_cnt = 1;
     @(posedge end_cnt);
+    @(posedge end_cnt);
     c_function();
+    @(posedge end_cnt);
     tx_trans_u.tx_action;
     @(posedge end_cnt);
     c_trans(tx_packet_1);
     tx_trans_u.tx_action;
+    @(posedge end_cnt);
+    cpp_long_vector(packet);
     $finish;
 end
 

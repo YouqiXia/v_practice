@@ -111,6 +111,7 @@ always @(posedge clk_user) begin
         rx_buff <= 0;
     end if (rx_mac_pa & ((rx_state == RX_WORK) | (rx_next_state == RX_WORK))) begin
         rx_buff <= {rx_buff[RX_BUF_WIDTH-1-32:0], rx_mac_data};
+        // rx_buff <= {rx_mac_data, rx_buff[RX_BUF_WIDTH-1:32]};
     end
 end
 
