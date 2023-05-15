@@ -1,8 +1,8 @@
-module bank_read_arbiter 
+module bank_write_arbiter 
 #(
     parameter   X_Y             = 2'b00, // 01, 10, 11, 00 enum?
-    parameter   PORT_NUM        = 5,
-    parameter   READ_BANK_PORT  = 2,
+    parameter   PORT_NUM        = 2,
+    parameter   WRITE_BANK_PORT = 1,
     parameter   ADDR_WIDTH      = 5 + 1;
     parameter   ADDR_X_SIZE     = 1,
     parameter   ADDR_X_WIDTH    = 1,
@@ -10,23 +10,22 @@ module bank_read_arbiter
     parameter   ADDR_Y_WIDTH    = 4,
 )(
     input   logic   [PORT_NUM-1:0][ADDR_WIDTH-1:0]          vreg_addr,
-    input   logic   [PORT_NUM-1:0]                          vreg_read_select,
-    output  logic   [PORT_NUM-1:0]                          bank_read_select,
-    output  logic   [READ_BANK_PORT-1:0][ADDR_Y_WIDTH-1:0]  addr,
-    output  logic   [READ_BANK_PORT-1:0][PORT_NUM-1:0]      prio_idx
+    input   logic   [PORT_NUM-1:0]                          vreg_write_select,
+    output  logic   [PORT_NUM-1:0]                          bank_write_select,
+    output  logic   [WRITE_BANK_PORT-1:0][ADDR_Y_WIDTH-1:0] addr,
+    output  logic   [WRITE_BANK_PORT-1:0][PORT_NUM-1:0]     prio_idx
 );
 
 genvar i;
-logic [PORT_NUM-1:0] req, reg_hit, gnt_first, gnt_second;
+logic [PORT_NUM-1:0] req, reg_hit, gnt;
 
-priority_N_2_mux pri_5_2_mux_u 
+priority_N_1_mux pri_2_1_mux_u 
 #(
     SEL_WIDTH(PORT_NUM),
 )(
-    .priority_idx(0),
-    .req(req),
-    .gnt_first(gnt_first),
-    .gnt_second(gnt_second)
+    .req    (req),
+    .base   ('0),
+    .gnt    (gnt)
 );
 
 generate
@@ -43,10 +42,9 @@ generate
     end
 endgenerate
 
-assign req              = ~vreg_read_select & reg_hit;
-assign prio_idx[0]      = gnt_first;
-assign prio_idx[1]      = gnt_second;
-assign bank_read_select = gnt_first | gnt_second;
+assign req                  = ~vreg_write_select & reg_hit;
+assign prio_idx             = gnt;
+assign bank_write_select    = gnt;
 
 always_comb begin
     addr = 0;

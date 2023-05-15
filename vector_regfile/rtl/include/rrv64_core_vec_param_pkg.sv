@@ -98,13 +98,14 @@ parameter TOKEN_IDX_W               = $clog2(TOKEN_LIST_DEPTH);
 
 // VRF
 parameter VRF_RPORT_NUM     = 5;
+parameter VRF_WPORT_NUM     = 2;
 
 parameter ISA_VREG_NUM      = 32;
 parameter ISA_VREG_WIDTH    = $clog2(ISA_VREG_NUM);
 
 // bank info
 parameter PERBANK_ROW_SIZE  = 16;
-parameter PERBANK_ROW_WIDTH = $clog2(BANK_ROW_SIZE);
+parameter PERBANK_ROW_WIDTH = $clog2(PERBANK_ROW_SIZE);
 parameter PERBANK_COL_SIZE  = 1;
 parameter PERBANK_COL_WIDTH = 1; // $clog2(PERBANK_COL_SIZE);
 parameter VRF_PREBANK_RPORT = 2;
@@ -116,12 +117,13 @@ parameter BANK_X_WIDTH      = $clog2(BANK_X_SIZE);
 parameter BANK_Y_SIZE       = 32/16;
 parameter BANK_Y_WIDTH      = $clog2(BANK_Y_SIZE);
 parameter VRF_BANK_NUM      = BANK_X_SIZE * BANK_Y_SIZE;
-parameter VERG_ADDR_WIDTH   = ISA_VREG_WIDTH + BANK_X_WIDTH;
+parameter VREG_ADDR_WIDTH   = ISA_VREG_WIDTH + BANK_X_WIDTH;
 
+/******************************** BUG ********************************/
 /* struct */
 typedef struct {
     logic   [VRF_RPORT_NUM-1:0]                         vld;
-    logic   [VRF_RPORT_NUM-1:0][VERG_ADDR_WIDTH-1:0]    vaddr;
+    logic   [VRF_RPORT_NUM-1:0][VREG_ADDR_WIDTH-1:0]    vaddr;
     logic   [VRF_RPORT_NUM-1:0][VSB_ENT_NUM-1:0]        rs_idx;
     logic   [VRF_RPORT_NUM-1:0][1:0]                    rs_field_idx;
 } prf_pipereg_t;
@@ -132,5 +134,6 @@ typedef struct {
     logic   [VRF_RPORT_NUM-1:0][VSB_ENT_NUM-1:0]   rs_idx;
     logic   [VRF_RPORT_NUM-1:0][1:0]               rs_field_idx;
 } prf_rdata_t;
+/******************************** BUG ********************************/
 
 endpackage 
