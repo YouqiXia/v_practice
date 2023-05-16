@@ -20,25 +20,23 @@ import rrv64_core_vec_param_pkg::*;
     input   logic [VFULEN-1:0]                        wdata1
 );
 
-/******************************** BUG ********************************/
 prf_pipereg_t                                                                   prf_pipereg, prf_pipereg_w;
-logic           [VRF_BANK_NUM-1:0]                                              read_select_ff;
-logic           [VRF_BANK_NUM-1:0]                                              read_select_next;
-logic           [VRF_BANK_NUM-1:0]                                              read_select_w;
+logic           [VRF_RPORT_NUM-1:0]                                             read_select_ff;
+logic           [VRF_RPORT_NUM-1:0]                                             read_select_next;
+logic           [VRF_RPORT_NUM-1:0]                                             read_select_w;
 logic           [VRF_BANK_NUM-1:0][VRF_RPORT_NUM-1:0]                           bank_read_select_w;
 logic           [VRF_BANK_NUM-1:0][VRF_PREBANK_RPORT-1:0][PERBANK_ROW_SIZE-1:0] raddr_w;
 logic           [VRF_BANK_NUM-1:0][VRF_PREBANK_RPORT-1:0][VFULEN-1:0]           bank_data_w;
 logic           [VRF_BANK_NUM-1:0][VRF_PREBANK_RPORT-1:0][VRF_RPORT_NUM-1:0]    rd_prio_idx_w;
 
-logic           [VRF_BANK_NUM-1:0][VREG_ADDR_WIDTH-1:0]                         vreg_waddr_w;
-logic           [VRF_BANK_NUM-1:0][VFULEN-1:0]                                  vreg_wdata_w;
-logic           [VRF_BANK_NUM-1:0]                                              write_select_w;
+logic           [VRF_WPORT_NUM-1:0][VREG_ADDR_WIDTH-1:0]                        vreg_waddr_w;
+logic           [VRF_WPORT_NUM-1:0][VFULEN-1:0]                                 vreg_wdata_w;
+logic           [VRF_WPORT_NUM-1:0]                                             write_select_w;
 logic           [VRF_BANK_NUM-1:0][VRF_WPORT_NUM-1:0]                           bank_write_select_w;
 logic           [VRF_BANK_NUM-1:0][VRF_PREBANK_WPORT-1:0][PERBANK_ROW_SIZE-1:0] waddr_w;
 logic           [VRF_BANK_NUM-1:0][VRF_PREBANK_WPORT-1:0]                       wen_w;
 logic           [VRF_BANK_NUM-1:0][VRF_PREBANK_WPORT-1:0][VFULEN-1:0]           wdata_w;
 logic           [VRF_BANK_NUM-1:0][VRF_PREBANK_WPORT-1:0][VRF_WPORT_NUM-1:0]    wr_prio_idx_w;
-/******************************** BUG ********************************/
 
 always @(posedge clk) begin
     if (~rstn) begin
@@ -136,7 +134,6 @@ bank_read_arbiter #(
     .prio_idx           (rd_prio_idx_w[2'b11])
 );
 
-/******************************** BUG ********************************/
 always_comb begin
     vrf_rs_packet.vld           = 0;
     vrf_rs_packet.data          = 0;
@@ -155,7 +152,6 @@ always_comb begin
         end
     end
 end
-/******************************** BUG ********************************/
 
 // write arbiter
 assign vreg_waddr_w[0]      = waddr0;
@@ -165,8 +161,8 @@ assign write_select_w[1]    = wr1_vld;
 assign vreg_wdata_w[0]      = wdata0;
 assign vreg_wdata_w[1]      = wdata1;
 
-assign wr0_conflict            = wr0_vld & ~(wr_prio_idx_w[2'b00][0][0] | wr_prio_idx_w[2'b01][0][0] | wr_prio_idx_w[2'b10][0][0] | wr_prio_idx_w[2'b11][0][0]);
-assign wr1_conflict            = wr1_vld & ~(wr_prio_idx_w[2'b00][0][1] | wr_prio_idx_w[2'b01][0][1] | wr_prio_idx_w[2'b10][0][1] | wr_prio_idx_w[2'b11][0][1]);
+assign wr0_conflict            = wr0_vld & ~(bank_write_select[2'b00][0][0] | bank_write_select[2'b01][0][0] | bank_write_select[2'b10][0][0] | bank_write_select[2'b11][0][0]);
+assign wr1_conflict            = wr1_vld & ~(bank_write_select[2'b00][0][1] | bank_write_select[2'b01][0][1] | bank_write_select[2'b10][0][1] | bank_write_select[2'b11][0][1]);
 bank_write_arbiter #(
     .X_Y                (2'b00),
     .PORT_NUM           (VRF_WPORT_NUM),
@@ -236,7 +232,17 @@ bank_write_arbiter #(
 ); 
 
 always_comb begin
-    for (int i = 0; i < )
+    wen_w = 0;
+    for (int i = 0; i < VRF_BANK_NUM; i++) begin
+        for (int j = 0; j < WRITE_BANK_PORT; j++) begin
+            for (int k = 0; k < VRF_WPORT_NUM; k++) begin
+                wen_w[i][j] |= wr_prio_idx_w[i][j][k];
+                if (wr_prio_idx_w[i][j][k]) begin
+                    wdata_w[i][j] = vreg_wdata_w[k];
+                end
+            end
+        end
+    end
 end
 
 // regfile bank
@@ -261,9 +267,9 @@ regfile_bank #(
 ) vregfile_01_bank (
     .raddr1    (raddr_w[2'b01][0]),
     .raddr2    (raddr_w[2'b01][1]),
-    .wen       (),
-    .waddr     (waddr_w[2'b11][0]),
-    .wdata     (),
+    .wen       (wen_w[2'b01][0]),
+    .waddr     (waddr_w[2'b01][0]),
+    .wdata     (wdata_w[2'b01][0]),
     .rdata1    (bank_data_w[2'b01][0]),
     .rdata2    (bank_data_w[2'b01][1])
 );
@@ -275,9 +281,9 @@ regfile_bank #(
 ) vregfile_10_bank (
     .raddr1    (raddr_w[2'b10][0]),
     .raddr2    (raddr_w[2'b10][1]),
-    .wen       (),
+    .wen       (wen_w[2'b00][0]),
     .waddr     (waddr_w[2'b11][0]),
-    .wdata     (),
+    .wdata     (wdata_w[2'b00][0]),
     .rdata1    (bank_data_w[2'b10][0]),
     .rdata2    (bank_data_w[2'b10][1])
 );
@@ -289,9 +295,9 @@ regfile_bank #(
 ) vregfile_11_bank (
     .raddr1    (raddr_w[2'b11][0]),
     .raddr2    (raddr_w[2'b11][1]),
-    .wen       (),
+    .wen       (wen_w[2'b11][0]),
     .waddr     (waddr_w[2'b11][0]),
-    .wdata     (),
+    .wdata     (wdata_w[2'b11][0]),
     .rdata1    (bank_data_w[2'b11][0]),
     .rdata2    (bank_data_w[2'b11][1])
 );
