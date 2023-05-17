@@ -13,10 +13,12 @@ import rrv64_core_vec_param_pkg::*;
     input   logic                                     wr0_vld,
     output  logic                                     wr0_conflict,
     input   logic [VREG_ADDR_WIDTH-1:0]               waddr0,
+    input   logic [VFULEN-1:0]                        wmask0,
     input   logic [VFULEN-1:0]                        wdata0,
     input   logic                                     wr1_vld,
     output  logic                                     wr1_conflict,
     input   logic [VREG_ADDR_WIDTH-1:0]               waddr1,
+    input   logic [VFULEN-1:0]                        wmask1,
     input   logic [VFULEN-1:0]                        wdata1
 );
 
@@ -25,25 +27,27 @@ logic           [VRF_RPORT_NUM-1:0]                                             
 logic           [VRF_RPORT_NUM-1:0]                                             read_select_next;
 logic           [VRF_RPORT_NUM-1:0]                                             read_select_w;
 logic           [VRF_BANK_NUM-1:0][VRF_RPORT_NUM-1:0]                           bank_read_select_w;
-logic           [VRF_BANK_NUM-1:0][VRF_PREBANK_RPORT-1:0][PERBANK_ROW_SIZE-1:0] raddr_w;
+logic           [VRF_BANK_NUM-1:0][VRF_PREBANK_RPORT-1:0][PERBANK_ROW_WIDTH-1:0]raddr_w;
 logic           [VRF_BANK_NUM-1:0][VRF_PREBANK_RPORT-1:0][VFULEN-1:0]           bank_data_w;
 logic           [VRF_BANK_NUM-1:0][VRF_PREBANK_RPORT-1:0][VRF_RPORT_NUM-1:0]    rd_prio_idx_w;
 
 logic           [VRF_WPORT_NUM-1:0][VREG_ADDR_WIDTH-1:0]                        vreg_waddr_w;
+logic           [VRF_WPORT_NUM-1:0][VFULEN-1:0]                                 vreg_wmask_w;
 logic           [VRF_WPORT_NUM-1:0][VFULEN-1:0]                                 vreg_wdata_w;
 logic           [VRF_WPORT_NUM-1:0]                                             write_select_w;
 logic           [VRF_BANK_NUM-1:0][VRF_WPORT_NUM-1:0]                           bank_write_select_w;
-logic           [VRF_BANK_NUM-1:0][VRF_PREBANK_WPORT-1:0][PERBANK_ROW_SIZE-1:0] waddr_w;
+logic           [VRF_BANK_NUM-1:0][VRF_PREBANK_WPORT-1:0][PERBANK_ROW_WIDTH-1:0]waddr_w;
 logic           [VRF_BANK_NUM-1:0][VRF_PREBANK_WPORT-1:0]                       wen_w;
+logic           [VRF_BANK_NUM-1:0][VRF_PREBANK_WPORT-1:0][VFULEN-1:0]           wmask_w;
 logic           [VRF_BANK_NUM-1:0][VRF_PREBANK_WPORT-1:0][VFULEN-1:0]           wdata_w;
 logic           [VRF_BANK_NUM-1:0][VRF_PREBANK_WPORT-1:0][VRF_WPORT_NUM-1:0]    wr_prio_idx_w;
 
 always @(posedge clk) begin
     if (~rstn) begin
-        for (integer i = 0; i < 5; i++) begin
-            prf_pipereg[i].vld  <= 0;
-            prf_pipereg[i].done <= 0;
-        end
+        prf_pipereg.vld             <= 0;
+        prf_pipereg.vaddr           <= 0;
+        prf_pipereg.rs_idx          <= 0;
+        prf_pipereg.rs_field_idx    <= 0;
     end else if (~busy) begin
         prf_pipereg = vdq_vrf_read_packet;
     end 
@@ -53,7 +57,7 @@ assign prf_pipereg_w = prf_pipereg;
 
 always_ff @(posedge clk) begin
     if (~rstn) begin
-        read_select_ff <= 0;
+        read_select_ff <= '1;
     end else if (~busy) begin
         read_select_ff <= ~vdq_vrf_read_packet.vld;
     end else begin
@@ -64,7 +68,7 @@ end
 //read arbiter
 assign read_select_next = read_select_ff | read_select_w;
 assign read_select_w    = bank_read_select_w[2'b00] | bank_read_select_w[2'b01] | bank_read_select_w[2'b10] | bank_read_select_w[2'b11];
-assign busy             = &read_select_next;
+assign busy             = ~(&read_select_next);
 
 bank_read_arbiter #(
     .X_Y                (2'b00),
@@ -75,7 +79,7 @@ bank_read_arbiter #(
     .ADDR_X_WIDTH       (PERBANK_COL_WIDTH),
     .ADDR_Y_SIZE        (PERBANK_ROW_SIZE),
     .ADDR_Y_WIDTH       (PERBANK_ROW_WIDTH)
-) bank_00_rarbiter (
+) bank_read_00_rarbiter (
     .vreg_addr          (prf_pipereg_w.vaddr),
     .vreg_read_select   (read_select_ff),
     .bank_read_select   (bank_read_select_w[2'b00]),
@@ -92,7 +96,7 @@ bank_read_arbiter #(
     .ADDR_X_WIDTH       (PERBANK_COL_WIDTH),
     .ADDR_Y_SIZE        (PERBANK_ROW_SIZE),
     .ADDR_Y_WIDTH       (PERBANK_ROW_WIDTH)
-) bank_00_rarbiter (
+) bank_read_01_rarbiter (
     .vreg_addr          (prf_pipereg_w.vaddr),
     .vreg_read_select   (read_select_ff),
     .bank_read_select   (bank_read_select_w[2'b01]),
@@ -109,7 +113,7 @@ bank_read_arbiter #(
     .ADDR_X_WIDTH       (PERBANK_COL_WIDTH),
     .ADDR_Y_SIZE        (PERBANK_ROW_SIZE),
     .ADDR_Y_WIDTH       (PERBANK_ROW_WIDTH)
-) bank_00_rarbiter (
+) bank_read_10_rarbiter (
     .vreg_addr          (prf_pipereg_w.vaddr),
     .vreg_read_select   (read_select_ff),
     .bank_read_select   (bank_read_select_w[2'b10]),
@@ -126,7 +130,7 @@ bank_read_arbiter #(
     .ADDR_X_WIDTH       (PERBANK_COL_WIDTH),
     .ADDR_Y_SIZE        (PERBANK_ROW_SIZE),
     .ADDR_Y_WIDTH       (PERBANK_ROW_WIDTH)
-) bank_00_rarbiter (
+) bank_read_11_rarbiter (
     .vreg_addr          (prf_pipereg_w.vaddr),
     .vreg_read_select   (read_select_ff),
     .bank_read_select   (bank_read_select_w[2'b11]),
@@ -156,13 +160,15 @@ end
 // write arbiter
 assign vreg_waddr_w[0]      = waddr0;
 assign vreg_waddr_w[1]      = waddr1;
-assign write_select_w[0]    = wr0_vld;
-assign write_select_w[1]    = wr1_vld;
+assign write_select_w[0]    = ~wr0_vld;
+assign write_select_w[1]    = ~wr1_vld;
+assign vreg_wmask_w[0]      = wmask0;
+assign vreg_wmask_w[1]      = wmask1;
 assign vreg_wdata_w[0]      = wdata0;
 assign vreg_wdata_w[1]      = wdata1;
 
-assign wr0_conflict            = wr0_vld & ~(bank_write_select[2'b00][0][0] | bank_write_select[2'b01][0][0] | bank_write_select[2'b10][0][0] | bank_write_select[2'b11][0][0]);
-assign wr1_conflict            = wr1_vld & ~(bank_write_select[2'b00][0][1] | bank_write_select[2'b01][0][1] | bank_write_select[2'b10][0][1] | bank_write_select[2'b11][0][1]);
+assign wr0_conflict            = wr0_vld & ~(bank_write_select_w[2'b00][0] | bank_write_select_w[2'b01][0] | bank_write_select_w[2'b10][0] | bank_write_select_w[2'b11][0]);
+assign wr1_conflict            = wr1_vld & ~(bank_write_select_w[2'b00][1] | bank_write_select_w[2'b01][1] | bank_write_select_w[2'b10][1] | bank_write_select_w[2'b11][1]);
 bank_write_arbiter #(
     .X_Y                (2'b00),
     .PORT_NUM           (VRF_WPORT_NUM),
@@ -172,10 +178,10 @@ bank_write_arbiter #(
     .ADDR_X_WIDTH       (PERBANK_COL_WIDTH),
     .ADDR_Y_SIZE        (PERBANK_ROW_SIZE),
     .ADDR_Y_WIDTH       (PERBANK_ROW_WIDTH)
-) bank_00_rarbiter (
+) bank_write_00_rarbiter (
     .vreg_addr          (vreg_waddr_w),
     .vreg_write_select  (write_select_w),
-    .bank_write_select  (bank_write_select[2'b00]),
+    .bank_write_select  (bank_write_select_w[2'b00]),
     .addr               (waddr_w[2'b00]),
     .prio_idx           (wr_prio_idx_w[2'b00])
 ); 
@@ -189,10 +195,10 @@ bank_write_arbiter #(
     .ADDR_X_WIDTH       (PERBANK_COL_WIDTH),
     .ADDR_Y_SIZE        (PERBANK_ROW_SIZE),
     .ADDR_Y_WIDTH       (PERBANK_ROW_WIDTH)
-) bank_00_rarbiter (
+) bank_write_01_rarbiter (
     .vreg_addr          (vreg_waddr_w),
     .vreg_write_select  (write_select_w),
-    .bank_write_select  (bank_write_select[2'b01]),
+    .bank_write_select  (bank_write_select_w[2'b01]),
     .addr               (waddr_w[2'b01]),
     .prio_idx           (wr_prio_idx_w[2'b01])
 ); 
@@ -206,10 +212,10 @@ bank_write_arbiter #(
     .ADDR_X_WIDTH       (PERBANK_COL_WIDTH),
     .ADDR_Y_SIZE        (PERBANK_ROW_SIZE),
     .ADDR_Y_WIDTH       (PERBANK_ROW_WIDTH)
-) bank_00_rarbiter (
+) bank_write_10_rarbiter (
     .vreg_addr          (vreg_waddr_w),
     .vreg_write_select  (write_select_w),
-    .bank_write_select  (bank_write_select[2'b10]),
+    .bank_write_select  (bank_write_select_w[2'b10]),
     .addr               (waddr_w[2'b10]),
     .prio_idx           (wr_prio_idx_w[2'b10])
 ); 
@@ -223,21 +229,24 @@ bank_write_arbiter #(
     .ADDR_X_WIDTH       (PERBANK_COL_WIDTH),
     .ADDR_Y_SIZE        (PERBANK_ROW_SIZE),
     .ADDR_Y_WIDTH       (PERBANK_ROW_WIDTH)
-) bank_00_rarbiter (
+) bank_write_11_rarbiter (
     .vreg_addr          (vreg_waddr_w),
     .vreg_write_select  (write_select_w),
-    .bank_write_select  (bank_write_select[2'b11]),
+    .bank_write_select  (bank_write_select_w[2'b11]),
     .addr               (waddr_w[2'b11]),
     .prio_idx           (wr_prio_idx_w[2'b11])
 ); 
 
 always_comb begin
-    wen_w = 0;
+    wen_w   = 0;
+    wmask_w = 0;
+    wdata_w = 0;
     for (int i = 0; i < VRF_BANK_NUM; i++) begin
-        for (int j = 0; j < WRITE_BANK_PORT; j++) begin
+        for (int j = 0; j < VRF_PREBANK_WPORT; j++) begin
             for (int k = 0; k < VRF_WPORT_NUM; k++) begin
                 wen_w[i][j] |= wr_prio_idx_w[i][j][k];
                 if (wr_prio_idx_w[i][j][k]) begin
+                    wmask_w[i][j] = vreg_wmask_w[k];
                     wdata_w[i][j] = vreg_wdata_w[k];
                 end
             end
@@ -251,10 +260,12 @@ regfile_bank #(
     .ROW_WIDTH (PERBANK_ROW_WIDTH),
     .WIDTH     (VFULEN)
 ) vregfile_00_bank (
+    .clk       (clk),
     .raddr1    (raddr_w[2'b00][0]),
     .raddr2    (raddr_w[2'b00][1]),
     .wen       (wen_w[2'b00][0]),
     .waddr     (waddr_w[2'b00][0]),
+    .wmask     (wmask_w[2'b00][0]),
     .wdata     (wdata_w[2'b00][0]),
     .rdata1    (bank_data_w[2'b00][0]),
     .rdata2    (bank_data_w[2'b00][1])
@@ -265,10 +276,12 @@ regfile_bank #(
     .ROW_WIDTH (PERBANK_ROW_WIDTH),
     .WIDTH     (VFULEN)
 ) vregfile_01_bank (
+    .clk       (clk),
     .raddr1    (raddr_w[2'b01][0]),
     .raddr2    (raddr_w[2'b01][1]),
     .wen       (wen_w[2'b01][0]),
     .waddr     (waddr_w[2'b01][0]),
+    .wmask     (wmask_w[2'b01][0]),
     .wdata     (wdata_w[2'b01][0]),
     .rdata1    (bank_data_w[2'b01][0]),
     .rdata2    (bank_data_w[2'b01][1])
@@ -279,11 +292,13 @@ regfile_bank #(
     .ROW_WIDTH (PERBANK_ROW_WIDTH),
     .WIDTH     (VFULEN)
 ) vregfile_10_bank (
+    .clk       (clk),
     .raddr1    (raddr_w[2'b10][0]),
     .raddr2    (raddr_w[2'b10][1]),
-    .wen       (wen_w[2'b00][0]),
-    .waddr     (waddr_w[2'b11][0]),
-    .wdata     (wdata_w[2'b00][0]),
+    .wen       (wen_w[2'b10][0]),
+    .waddr     (waddr_w[2'b10][0]),
+    .wmask     (wmask_w[2'b10][0]),
+    .wdata     (wdata_w[2'b10][0]),
     .rdata1    (bank_data_w[2'b10][0]),
     .rdata2    (bank_data_w[2'b10][1])
 );
@@ -293,10 +308,12 @@ regfile_bank #(
     .ROW_WIDTH (PERBANK_ROW_WIDTH),
     .WIDTH     (VFULEN)
 ) vregfile_11_bank (
+    .clk       (clk),
     .raddr1    (raddr_w[2'b11][0]),
     .raddr2    (raddr_w[2'b11][1]),
     .wen       (wen_w[2'b11][0]),
     .waddr     (waddr_w[2'b11][0]),
+    .wmask     (wmask_w[2'b11][0]),
     .wdata     (wdata_w[2'b11][0]),
     .rdata1    (bank_data_w[2'b11][0]),
     .rdata2    (bank_data_w[2'b11][1])
