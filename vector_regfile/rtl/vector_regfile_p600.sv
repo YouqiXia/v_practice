@@ -6,9 +6,10 @@ import rrv64_core_vec_param_pkg::*;
 
     //read port
     input   prf_pipereg_t                       vdq_vrf_read_packet,
+    input   [VRF_RPORT_NUM-1:0]                 vdq_vrf_req,
     output  logic                               busy,
-    output  logic [VLEN-1:0]                    data_v0,
     output  prf_rdata_t                         vrf_rs_packet,
+    output  logic [VLEN-1:0]                    data_v0,
 
     //write port
     input   logic                                     wr0_vld,
@@ -44,26 +45,14 @@ logic           [VRF_BANK_NUM-1:0][VRF_PREBANK_WPORT-1:0][VFULEN-1:0]           
 logic           [VRF_BANK_NUM-1:0][VRF_PREBANK_WPORT-1:0][VFULEN-1:0]           wdata_w;
 logic           [VRF_BANK_NUM-1:0][VRF_PREBANK_WPORT-1:0][VRF_WPORT_NUM-1:0]    wr_prio_idx_w;
 
+assign prf_pipereg_w = vdq_vrf_read_packet;
 assign data_v0       = {vector_arch_v0_high, vector_arch_v0_low};
-
-always @(posedge clk) begin
-    if (~rstn) begin
-        prf_pipereg.vld             <= 0;
-        prf_pipereg.vaddr           <= 0;
-        prf_pipereg.rs_idx          <= 0;
-        prf_pipereg.rs_field_idx    <= 0;
-    end else if (~busy) begin
-        prf_pipereg = vdq_vrf_read_packet;
-    end 
-end
-
-assign prf_pipereg_w = prf_pipereg;
 
 always_ff @(posedge clk) begin
     if (~rstn) begin
         read_select_ff <= '1;
     end else if (~busy) begin
-        read_select_ff <= ~vdq_vrf_read_packet.vld;
+        read_select_ff <= ~iss_vrf_req;
     end else begin
         read_select_ff <= read_select_next;
     end

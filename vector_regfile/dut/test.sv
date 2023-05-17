@@ -9,6 +9,7 @@ logic       rstn;
 //read port
 prf_pipereg_t                       vdq_vrf_read_packet;
 logic                               busy;
+logic [VLEN-1:0]                    data_v0;
 prf_rdata_t                         vrf_rs_packet;
 
 //write port
@@ -30,6 +31,7 @@ vector_regfile vector_regfile_u(
     .rstn                   (rstn),
     .vdq_vrf_read_packet    (vdq_vrf_read_packet),
     .busy                   (busy),
+    .data_v0                (data_v0),
     .vrf_rs_packet          (vrf_rs_packet),
     .wr0_vld                (wr0_vld),
     .wr0_conflict           (wr0_conflict),
