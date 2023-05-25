@@ -44,6 +44,11 @@ logic           [VRF_BANK_NUM-1:0][VRF_PREBANK_WPORT-1:0][VFULEN-1:0]           
 logic           [VRF_BANK_NUM-1:0][VRF_PREBANK_WPORT-1:0][VFULEN-1:0]           wdata_w;
 logic           [VRF_BANK_NUM-1:0][VRF_PREBANK_WPORT-1:0][VRF_WPORT_NUM-1:0]    wr_prio_idx_w;
 
+logic                                                                           wr0_nonconf_vld;
+logic                                                                           wr1_nonconf_vld;
+logic           [VRF_RPORT_NUM-1:0]                                             wr_rd_conf_stall;
+logic           [VRF_RPORT_NUM-1:0]                                             read_select_byconf;
+
 assign data_v0       = {vector_arch_v0_high, vector_arch_v0_low};
 
 always @(posedge clk) begin
@@ -70,9 +75,10 @@ always_ff @(posedge clk) begin
 end
 
 //read arbiter
-assign read_select_next = read_select_ff | read_select_w;
-assign read_select_w    = bank_read_select_w[2'b00] | bank_read_select_w[2'b01] | bank_read_select_w[2'b10] | bank_read_select_w[2'b11];
-assign busy             = ~(&read_select_next);
+assign read_select_next     = read_select_ff | read_select_w;
+assign read_select_w        = bank_read_select_w[2'b00] | bank_read_select_w[2'b01] | bank_read_select_w[2'b10] | bank_read_select_w[2'b11];
+assign busy                 = ~(&read_select_next);
+assign read_select_byconf   = wr_rd_conf_stall | read_select_ff;
 
 bank_read_arbiter #(
     .X_Y                (2'b00),
@@ -85,7 +91,7 @@ bank_read_arbiter #(
     .ADDR_Y_WIDTH       (PERBANK_ROW_WIDTH)
 ) bank_read_00_rarbiter (
     .vreg_addr          (prf_pipereg_w.vaddr),
-    .vreg_read_select   (read_select_ff),
+    .vreg_read_select   (read_select_byconf),
     .bank_read_select   (bank_read_select_w[2'b00]),
     .addr               (raddr_w[2'b00]),
     .prio_idx           (rd_prio_idx_w[2'b00])
@@ -102,7 +108,7 @@ bank_read_arbiter #(
     .ADDR_Y_WIDTH       (PERBANK_ROW_WIDTH)
 ) bank_read_01_rarbiter (
     .vreg_addr          (prf_pipereg_w.vaddr),
-    .vreg_read_select   (read_select_ff),
+    .vreg_read_select   (read_select_byconf),
     .bank_read_select   (bank_read_select_w[2'b01]),
     .addr               (raddr_w[2'b01]),
     .prio_idx           (rd_prio_idx_w[2'b01])
@@ -119,7 +125,7 @@ bank_read_arbiter #(
     .ADDR_Y_WIDTH       (PERBANK_ROW_WIDTH)
 ) bank_read_10_rarbiter (
     .vreg_addr          (prf_pipereg_w.vaddr),
-    .vreg_read_select   (read_select_ff),
+    .vreg_read_select   (read_select_byconf),
     .bank_read_select   (bank_read_select_w[2'b10]),
     .addr               (raddr_w[2'b10]),
     .prio_idx           (rd_prio_idx_w[2'b10])
@@ -136,7 +142,7 @@ bank_read_arbiter #(
     .ADDR_Y_WIDTH       (PERBANK_ROW_WIDTH)
 ) bank_read_11_rarbiter (
     .vreg_addr          (prf_pipereg_w.vaddr),
-    .vreg_read_select   (read_select_ff),
+    .vreg_read_select   (read_select_byconf),
     .bank_read_select   (bank_read_select_w[2'b11]),
     .addr               (raddr_w[2'b11]),
     .prio_idx           (rd_prio_idx_w[2'b11])
@@ -166,6 +172,8 @@ assign vreg_waddr_w[0]      = waddr0;
 assign vreg_waddr_w[1]      = waddr1;
 assign write_select_w[0]    = ~wr0_vld;
 assign write_select_w[1]    = ~wr1_vld;
+assign wr0_nonconf_vld      = wr0_vld & ~wr0_conflict;
+assign wr1_nonconf_vld      = wr1_vld & ~wr1_conflict; 
 assign vreg_wmask_w[0]      = wmask0;
 assign vreg_wmask_w[1]      = wmask1;
 assign vreg_wdata_w[0]      = wdata0;
@@ -257,6 +265,13 @@ always_comb begin
         end
     end
 end
+
+generate
+    genvar gen_i;
+    for (gen_i = 0; gen_i < VRF_RPORT_NUM; gen_i++) begin
+        assign wr_rd_conf_stall[gen_i] = ((prf_pipereg_w.vaddr[gen_i] == waddr0) & wr0_nonconf_vld) | ((prf_pipereg_w.vaddr[gen_i] == waddr1) & wr1_nonconf_vld);
+    end
+endgenerate
 
 // regfile bank
 regfile_bank #(
