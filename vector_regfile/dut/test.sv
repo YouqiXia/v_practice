@@ -50,11 +50,9 @@ logic [VRF_RPORT_NUM-1:0][VREG_ADDR_WIDTH-1:0] read_addr;
 // main {
 initial begin
     reset(); 
-    rand_wr(1,0,1,1);
-    rand_wr(1,2,1,3);
-    rand_wr(1,4,1,5);
-    rand_wr(1,6,1,7);
-    rand_wr(1,8,1,9);
+    for (int i = 0; i < 32*2; i = i + 2) begin
+        rand_wr(1,i,1,i+1);
+    end
     set_read_addr(1,3,5,7,9,read_addr);
     read_chk(5'b11111, read_addr);
     #(PERIOD * 100);

@@ -369,4 +369,31 @@ always @(posedge clk) begin
     end 
 end
 
+// simulation interface
+
+logic [ISA_VREG_NUM-1:0] [VLEN-1:0] vrf;
+logic [ISA_VREG_NUM-1:0] [VLEN/VFULEN-1:0] [VFULEN-1:0] vrf_bank;
+
+generate
+    for (genvar i = 0; i < ISA_VREG_NUM; i++) begin
+        for (genvar j = 0; j < VLEN/VFULEN; j++) begin
+           assign vrf[i][j*VFULEN+:VFULEN] = vrf_bank[i][j];
+        end
+    end
+
+    for (genvar i = 0; i < ISA_VREG_NUM; i++) begin
+        for (genvar j = 0; j < VLEN/VFULEN; j++) begin
+            if ((i < PERBANK_ROW_SIZE) & (j < PERBANK_COL_SIZE)) begin
+                assign vrf_bank[i][j] = vregfile_00_bank.regfile[i]; 
+            end else if (!(i < PERBANK_ROW_SIZE) &  (j < PERBANK_COL_SIZE)) begin
+                assign vrf_bank[i][j] = vregfile_01_bank.regfile[i-PERBANK_ROW_SIZE]; 
+            end else if ( (i < PERBANK_ROW_SIZE) & !(j < PERBANK_COL_SIZE)) begin
+                assign vrf_bank[i][j] = vregfile_10_bank.regfile[i]; 
+            end else if (!(i < PERBANK_ROW_SIZE) & !(j < PERBANK_COL_SIZE)) begin
+                assign vrf_bank[i][j] = vregfile_11_bank.regfile[i-PERBANK_ROW_SIZE]; 
+            end
+        end
+    end
+endgenerate
+
 endmodule
